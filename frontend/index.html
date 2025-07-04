@@ -1,1 +1,112 @@
 
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Teacher Portal - Enter Results</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+</head>
+<body>
+  <h2>Teacher Login</h2>
+  <input type="email" id="email" placeholder="Email" required>
+  <input type="password" id="password" placeholder="Password" required>
+  <button onclick="login()">Login</button>
+  <hr>
+
+  <div id="formSection" style="display:none;">
+    <h2>Enter Student Result</h2>
+    <form id="resultForm">
+      <input type="text" id="roll_no" placeholder="Roll No" required><br>
+      <input type="text" id="name" placeholder="Student Name" required><br>
+      <input type="text" id="class" placeholder="Class" required><br>
+      <input type="text" id="subject" placeholder="Subject Code (e.g. MATH101)" required><br>
+      <input type="number" id="marks" placeholder="Marks" required><br>
+      <input type="text" id="exam_name" placeholder="Exam Name (e.g. Midterm)" required><br>
+      <input type="number" id="year" placeholder="Year" required><br>
+      <button type="submit">Submit Result</button>
+    </form>
+  </div>
+
+  <script>
+    const SUPABASE_URL = 'https://your-project-url.supabase.co';
+    const SUPABASE_KEY = 'your-anon-key';
+    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    async function login() {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        alert("Login failed: " + error.message);
+      } else {
+        alert("Login successful");
+        document.getElementById("formSection").style.display = "block";
+      }
+    }
+
+    document.getElementById("resultForm").addEventListener("submit", async function (e) {
+      e.preventDefault();
+
+      const roll_no = document.getElementById("roll_no").value;
+      const name = document.getElementById("name").value;
+      const className = document.getElementById("class").value;
+      const subjectCode = document.getElementById("subject").value;
+      const marks = parseInt(document.getElementById("marks").value);
+      const exam_name = document.getElementById("exam_name").value;
+      const year = parseInt(document.getElementById("year").value);
+
+      let { data: student } = await supabase
+        .from('students')
+        .select('*')
+        .eq('roll_no', roll_no)
+        .single();
+
+      if (!student) {
+        const result = await supabase
+          .from('students')
+          .insert({ roll_no, name, class: className, dob: '2000-01-01' })
+          .select()
+          .single();
+        student = result.data;
+      }
+
+      const { data: subject } = await supabase
+        .from('subjects')
+        .select('*')
+        .eq('code', subjectCode)
+        .single();
+
+      let { data: exam } = await supabase
+        .from('exams')
+        .select('*')
+        .eq('name', exam_name)
+        .eq('year', year)
+        .single();
+
+      if (!exam) {
+        const result = await supabase
+          .from('exams')
+          .insert({ name: exam_name, year })
+          .select()
+          .single();
+        exam = result.data;
+      }
+
+      const { error: resultError } = await supabase
+        .from('results')
+        .insert({
+          student_id: student.id,
+          subject_id: subject.id,
+          exam_id: exam.id,
+          marks
+        });
+
+      if (resultError) {
+        alert("Failed to submit result: " + resultError.message);
+      } else {
+        alert("Result submitted successfully!");
+      }
+    });
+  </script>
+</body>
+</html>

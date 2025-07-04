@@ -1,0 +1,99 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Student Result Portal</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+    th { background-color: #f4f4f4; }
+  </style>
+</head>
+<body>
+  <h2>Check Student Result</h2>
+  <input type="text" id="roll_no" placeholder="Roll No" required>
+  <input type="text" id="class" placeholder="Class" required>
+  <input type="text" id="exam_name" placeholder="Exam Name" required>
+  <button onclick="getResults()">Get Result</button>
+
+  <div id="resultSection" style="display:none;">
+    <h3>Results for <span id="studentName"></span></h3>
+    <table id="resultTable">
+      <thead>
+        <tr>
+          <th>Subject</th>
+          <th>Marks</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <p><strong>Total Marks:</strong> <span id="totalMarks"></span></p>
+    <p><strong>Percentage:</strong> <span id="percentage"></span>%</p>
+    <p><strong>Remarks:</strong> <span id="remarks"></span></p>
+  </div>
+
+  <script>
+    const SUPABASE_URL = 'https://your-project-url.supabase.co';
+    const SUPABASE_KEY = 'your-anon-key';
+    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    async function getResults() {
+      const roll_no = document.getElementById("roll_no").value;
+      const className = document.getElementById("class").value;
+      const exam_name = document.getElementById("exam_name").value;
+
+      // Get student
+      const { data: student } = await supabase
+        .from('students')
+        .select('*')
+        .eq('roll_no', roll_no)
+        .eq('class', className)
+        .single();
+
+      if (!student) return alert("Student not found");
+
+      // Get exam
+      const { data: exam } = await supabase
+        .from('exams')
+        .select('*')
+        .eq('name', exam_name)
+        .single();
+
+      if (!exam) return alert("Exam not found");
+
+      // Get results
+      const { data: results } = await supabase
+        .from('results')
+        .select('marks, subject_id, subject:subjects(name)')
+        .eq('student_id', student.id)
+        .eq('exam_id', exam.id);
+
+      if (!results || results.length === 0) return alert("No results found");
+
+      document.getElementById("studentName").textContent = student.name;
+
+      const tbody = document.querySelector("#resultTable tbody");
+      tbody.innerHTML = "";
+
+      let total = 0;
+      results.forEach(res => {
+        total += res.marks;
+        const row = `<tr><td>${res.subject.name}</td><td>${res.marks}</td></tr>`;
+        tbody.innerHTML += row;
+      });
+
+      const maxMarks = results.length * 100;
+      const percent = ((total / maxMarks) * 100).toFixed(2);
+      const remarks = percent >= 90 ? "Excellent" : percent >= 75 ? "Good" : percent >= 50 ? "Average" : "Needs Improvement";
+
+      document.getElementById("totalMarks").textContent = `${total} / ${maxMarks}`;
+      document.getElementById("percentage").textContent = percent;
+      document.getElementById("remarks").textContent = remarks;
+
+      document.getElementById("resultSection").style.display = "block";
+    }
+  </script>
+</body>
+</html>
