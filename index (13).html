@@ -1,0 +1,50 @@
+<!-- Save as frontend/index.html -->
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Teacher Login</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+</head>
+<body>
+  <h2>Login</h2>
+  <input type="email" id="email" placeholder="Email">
+  <input type="password" id="password" placeholder="Password">
+  <button onclick="login()">Login</button>
+
+  <div id="formSection" style="display:none;">
+    <h3>Welcome, Teacher</h3>
+    <!-- Add your mark entry form here -->
+  </div>
+
+  <script>
+    const SUPABASE_URL = 'https://koenyukijrywqlznplxm.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtvZW55dWtpanJ5d3Fsem5wbHhtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3ODc2OTIsImV4cCI6MjA2NjM2MzY5Mn0.Efw1-SR0Sa6Hm0TM7s3ctbM0U-YvwZPK_L6iErirZYE';
+    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    async function login() {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) return alert("Login failed: " + error.message);
+
+      const { data: { user } } = await supabase.auth.getUser();
+
+      const { data: admin } = await supabase
+        .from("admins")
+        .select("role")
+        .eq("email", user.email)
+        .single();
+
+      if (!admin) return alert("Not registered in admins table");
+
+      if (admin.role === "superadmin") {
+        window.location.href = "superadmin_dashboard.html";
+      } else {
+        alert("Welcome Teacher");
+        document.getElementById("formSection").style.display = "block";
+      }
+    }
+  </script>
+</body>
+</html>
