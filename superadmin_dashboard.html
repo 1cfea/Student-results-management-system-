@@ -1,9 +1,13 @@
-<!-- Save as frontend/superadmin_dashboard.html -->
 <!DOCTYPE html>
 <html>
 <head>
   <title>Superadmin Dashboard</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <style>
+    table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+    th { background-color: #f0f0f0; }
+  </style>
 </head>
 <body>
   <h2>Superadmin Dashboard</h2>
@@ -22,9 +26,21 @@
 
       if (error) return alert("Error loading results");
 
-      let html = "<table border='1'><tr><th>Name</th><th>Roll</th><th>Subject</th><th>Marks</th><th>Exam</th><th>Year</th></tr>";
+      if (!data || data.length === 0) {
+        document.getElementById("output").innerHTML = "<p>No results found.</p>";
+        return;
+      }
+
+      let html = "<table><tr><th>Name</th><th>Roll</th><th>Subject</th><th>Marks</th><th>Exam</th><th>Year</th></tr>";
       data.forEach(r => {
-        html += `<tr><td>${r.student.name}</td><td>${r.student.roll_no}</td><td>${r.subject.name}</td><td>${r.marks}</td><td>${r.exam.name}</td><td>${r.exam.year}</td></tr>`;
+        html += `<tr>
+          <td>${r.student.name}</td>
+          <td>${r.student.roll_no}</td>
+          <td>${r.subject.name}</td>
+          <td>${r.marks}</td>
+          <td>${r.exam.name}</td>
+          <td>${r.exam.year}</td>
+        </tr>`;
       });
       html += "</table>";
       document.getElementById("output").innerHTML = html;
