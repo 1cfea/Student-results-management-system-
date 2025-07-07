@@ -1,19 +1,18 @@
-<!-- Save as frontend/index.html -->
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Teacher Login</title>
+  <title>Teacher Login - Student Results System</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 </head>
 <body>
   <h2>Login</h2>
-  <input type="email" id="email" placeholder="Email">
-  <input type="password" id="password" placeholder="Password">
+  <input type="email" id="email" placeholder="Email" />
+  <input type="password" id="password" placeholder="Password" />
   <button onclick="login()">Login</button>
 
   <div id="formSection" style="display:none;">
     <h3>Welcome, Teacher</h3>
-    <!-- Add your mark entry form here -->
+    <!-- You can paste the mark entry form here -->
   </div>
 
   <script>
@@ -25,23 +24,44 @@
       const email = document.getElementById("email").value;
       const password = document.getElementById("password").value;
 
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) return alert("Login failed: " + error.message);
+      const { error: loginError } = await supabase.auth.signInWithPassword({ email, password });
+      if (loginError) {
+        alert("Login failed: " + loginError.message);
+        return;
+      }
 
       const { data: { user } } = await supabase.auth.getUser();
 
-      const { data: admin } = await supabase
+      let { data: admin, error: fetchError } = await supabase
         .from("admins")
-        .select("role")
+        .select("*")
         .eq("email", user.email)
         .single();
 
-      if (!admin) return alert("Not registered in admins table");
+      if (!admin && fetchError) {
+        const { data: newAdmin, error: insertError } = await supabase
+          .from("admins")
+          .insert({
+            email: user.email,
+            name: user.email.split('@')[0],
+            role: "teacher"
+          })
+          .select()
+          .single();
+
+        if (insertError) {
+          alert("Auto-registration failed: " + insertError.message);
+          return;
+        }
+
+        admin = newAdmin;
+        alert("Teacher auto-registered successfully.");
+      }
 
       if (admin.role === "superadmin") {
         window.location.href = "superadmin_dashboard.html";
       } else {
-        alert("Welcome Teacher");
+        alert("Welcome, Teacher");
         document.getElementById("formSection").style.display = "block";
       }
     }
