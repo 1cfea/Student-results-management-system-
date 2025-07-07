@@ -1,8 +1,14 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Teacher Login - Student Results System</title>
+  <title>Student Results Login</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; }
+    input { margin: 5px 0; padding: 8px; width: 100%; }
+    button { padding: 10px; margin: 10px 0; width: 100%; }
+    h2, h3, h4 { margin-top: 30px; }
+  </style>
 </head>
 <body>
   <h2>Login</h2>
@@ -10,9 +16,18 @@
   <input type="password" id="password" placeholder="Password" />
   <button onclick="login()">Login</button>
 
+  <h3>Or Sign Up</h3>
+  <input type="email" id="signupEmail" placeholder="Email" />
+  <input type="password" id="signupPassword" placeholder="Password" />
+  <button onclick="signUp()">Sign Up</button>
+
+  <h4>Forgot Password?</h4>
+  <input type="email" id="resetEmail" placeholder="Enter your email" />
+  <button onclick="resetPassword()">Send Reset Link</button>
+
   <div id="formSection" style="display:none;">
     <h3>Welcome, Teacher</h3>
-    <!-- You can paste the mark entry form here -->
+    <!-- You can paste your mark entry form here -->
   </div>
 
   <script>
@@ -39,23 +54,27 @@
         .single();
 
       if (!admin && fetchError) {
+        const { data: allAdmins } = await supabase.from("admins").select("*");
+        const isFirst = allAdmins.length === 0;
+        const roleToAssign = isFirst ? "superadmin" : "teacher";
+
         const { data: newAdmin, error: insertError } = await supabase
           .from("admins")
           .insert({
             email: user.email,
             name: user.email.split('@')[0],
-            role: "teacher"
+            role: roleToAssign
           })
           .select()
           .single();
 
         if (insertError) {
-          alert("Auto-registration failed: " + insertError.message);
+          alert("Could not auto-register: " + insertError.message);
           return;
         }
 
         admin = newAdmin;
-        alert("Teacher auto-registered successfully.");
+        alert(`Registered as ${roleToAssign}`);
       }
 
       if (admin.role === "superadmin") {
@@ -63,6 +82,33 @@
       } else {
         alert("Welcome, Teacher");
         document.getElementById("formSection").style.display = "block";
+      }
+    }
+
+    async function signUp() {
+      const email = document.getElementById("signupEmail").value;
+      const password = document.getElementById("signupPassword").value;
+
+      const { error } = await supabase.auth.signUp({ email, password });
+
+      if (error) {
+        alert("Sign up failed: " + error.message);
+      } else {
+        alert("Sign up successful. Please check your email to confirm.");
+      }
+    }
+
+    async function resetPassword() {
+      const email = document.getElementById("resetEmail").value;
+
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.href // or custom success page
+      });
+
+      if (error) {
+        alert("Reset failed: " + error.message);
+      } else {
+        alert("Check your email for reset instructions.");
       }
     }
   </script>
